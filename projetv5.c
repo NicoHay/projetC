@@ -252,13 +252,14 @@ void* client(void* arg){
 
        
         printf ("CLIENT ++ socket connectee\n");
-        strcpy(messageclient.text, "coucou test avec struct");
-        messageclient.indexinterne  = monIndex;
-        messageclient.zonecritique  = 1;
-        messageclient.estampille    = 10;
+        // strcpy(messageclient.text, "coucou test avec struct");
+        // messageclient.indexinterne  = monIndex;
+        // messageclient.zonecritique  = 1;
+        // messageclient.estampille    = 10;
         // pintf ("CLIENT ++ Envoi de la requete : %s \n", requete);
 
-        send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
+        // send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
+        send(descripteurDeSocket, &requete, strlen(requete), 0);
 
 
         char          buffer[1024];
