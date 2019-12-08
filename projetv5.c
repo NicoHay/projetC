@@ -3,8 +3,10 @@
     ///////////////////////           TODO  LIST          ///////////////////////
     /////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////
-    // -- CHECK SUR LE CONTINUER COMMENT LE GERER                              //
-    // -- ENVOIE DES STRUCT DEPUIS LE CLIENT                                   //
+    // -- CHECK SUR LE CONTINUER COMMENT LE GERER                             
+    // -- ENVOIE DES STRUCT DEPUIS LE CLIENT  
+    // -- HORLOGE DE LAMPORT                                
+    // -- AJOUTER UN TROISIEME PROCESS DANS LE TAB DE LA LISTE DES PORTS 
     /////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////
@@ -50,6 +52,7 @@ struct arg_struct {
     int         nbre_tour;
     pthread_t  thread;
 }args;
+
 // FONCTIONS HEADER
 void*   theBrain(void* arguments);
 void*   serveur(void* arg);
@@ -59,7 +62,6 @@ void    messageBidon();
 void    simcritique();
 void    zoneCritique();
 void    actionInterne();
-
 
 /*
 ***************************************************************
@@ -77,19 +79,18 @@ int main (int argc, char *argv[]){
     int     i, action;
     void* retourserveur ;
     void* retourbrain ;
- 
     struct arg_struct args;
 
     
-   listePort[0] = atoi( argv[1]);
-   listePort[1] = atoi( argv[2]);
+    listePort[0] = atoi( argv[1]);
+    listePort[1] = atoi( argv[2]);
     
  
-    srand((unsigned) time(&t));
+    srand((unsigned) time(&t)); // pour le tirage de l'action aleatoire 
  
     pthread_create (&threadserveur, NULL, serveur, (void *) &listePort[0]);
    
-    sleep(3);
+    sleep(3); // pour avoir le temps de lancer les autres process
 
     for (int i = 0; i < NBRE_TOURS; i++)
     {
@@ -108,7 +109,7 @@ int main (int argc, char *argv[]){
     printf("======= le retour du thread SERVEUR est :  %ld\n", (long) retourserveur);
 
 
-	for (int i = 0; i < sizeof(zmClientBrain)/sizeof(zmClientBrain[0]); i++)
+	for (int i = 0; i < sizeof(zmClientBrain)/sizeof(zmClientBrain[0]); i++) // afficher le tableau des actions 
 	{
 		printf("[%d] ",zmClientBrain[i]);
 	}
@@ -133,12 +134,9 @@ void*  serveur(void* arg){
 
     adresseDuServeur.sin_family      = AF_INET;
     adresseDuServeur.sin_port        = htons( *(int*)arg);
-
-      adresseDuServeur.sin_addr.s_addr = INADDR_ANY;
-
-
-
+    adresseDuServeur.sin_addr.s_addr = INADDR_ANY;
     int descripteurDeSocketServeur = socket (PF_INET, SOCK_STREAM, 0);
+
 
     if (descripteurDeSocketServeur < 0)
     {
@@ -148,9 +146,7 @@ void*  serveur(void* arg){
 
     // printf ("SERVEUR === Socket cree\n");
 
-    if ( bind ( descripteurDeSocketServeur, 
-                (struct sockaddr *)&adresseDuServeur, 
-                sizeof(struct sockaddr_in) ) < 0)
+    if ( bind ( descripteurDeSocketServeur, (struct sockaddr *)&adresseDuServeur, sizeof(struct sockaddr_in) ) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le bind\n");
         pthread_exit((void*) -1) ;
@@ -176,10 +172,7 @@ void*  serveur(void* arg){
 
         // printf ("SERVEUR ++ Socket en attente\n");
 
-        descripteurDeSocketClient = accept (descripteurDeSocketServeur,
-                                        (struct sockaddr *)&adresseDuClient,
-                                        &longueurDeAdresseDuClient);
-
+        descripteurDeSocketClient = accept (descripteurDeSocketServeur, (struct sockaddr *)&adresseDuClient, &longueurDeAdresseDuClient);
 
         unsigned int       nbCaracteres;
         unsigned int       i;
@@ -201,14 +194,9 @@ void*  serveur(void* arg){
         printf("\n SERVEUR ++ Ecriture de la reponse : %s\n", reponse);
 
         send(descripteurDeSocketClient, reponse, strlen(reponse), 0);  
-
         close (descripteurDeSocketClient);
     }
-
-
-
         pthread_exit( (void*) 0);
-
 }
 
 /*
@@ -221,69 +209,62 @@ void*  serveur(void* arg){
 ***************************************************************
 */
 void* client(void* arg){
-
+    
     struct Messageinfos messageclient;
     struct sockaddr_in adr;
 
-  adr.sin_family      = AF_INET;
-  adr.sin_port        = htons( *(int *)arg);
-  adr.sin_addr.s_addr = INADDR_ANY ;
-  int descripteurDeSocket = socket (AF_INET, SOCK_STREAM, 0);
+    adr.sin_family      = AF_INET;
+    adr.sin_port        = htons( *(int *)arg);
+    adr.sin_addr.s_addr = INADDR_ANY ;
+    int descripteurDeSocket = socket (AF_INET, SOCK_STREAM, 0);
 
 
-  if (descripteurDeSocket < 0 )
-   {
-    printf ("CLIENT ++ Problemes pour creer la socket\n");
-  
-    pthread_exit( (void*) -1);
-   }
+    if (descripteurDeSocket < 0 )
+    {
+        printf ("CLIENT ++ Problemes pour creer la socket\n");
+    
+        pthread_exit( (void*) -1);
+    }
 
-//   printf ("CLIENT ++ socket cree\n");
+    //   printf ("CLIENT ++ socket cree\n");
 
 
-  if (connect ( descripteurDeSocket,
-                (struct sockaddr *) &adr,
-                sizeof(adr)                ) < 0)
-   {
-    printf ("CLIENT ++ Problemes pour se connecter au serveur\n");
-    pthread_exit( (void*) -1);
+    if (connect ( descripteurDeSocket,(struct sockaddr *) &adr, sizeof(adr)) < 0)
+    {
+        printf ("CLIENT ++ Problemes pour se connecter au serveur\n");
+        pthread_exit( (void*) -1);
 
-   }
+    }
 
        
-        printf ("CLIENT ++ socket connectee\n");
-        // strcpy(messageclient.text, "coucou test avec struct");
-        // messageclient.indexinterne  = monIndex;
-        // messageclient.zonecritique  = 1;
-        // messageclient.estampille    = 10;
-        // pintf ("CLIENT ++ Envoi de la requete : %s \n", requete);
+    printf ("CLIENT ++ socket connectee\n");
+    // strcpy(messageclient.text, "coucou test avec struct");
+    // messageclient.indexinterne  = monIndex;
+    // messageclient.zonecritique  = 1;
+    // messageclient.estampille    = 10;
+    // pintf ("CLIENT ++ Envoi de la requete : %s \n", requete);
 
-        // send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
-        send(descripteurDeSocket, &requete, strlen(requete), 0);
+    // send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
+    send(descripteurDeSocket, &requete, strlen(requete), 0);
 
+    char          buffer[1024];
+    unsigned int  nbCaracteres;
+    unsigned int  i;
 
-        char          buffer[1024];
-        unsigned int  nbCaracteres;
-        unsigned int  i;
+    printf ("CLIENT ++ Reception de la reponse : \n");
 
-        printf ("CLIENT ++ Reception de la reponse : \n");
+    do{
+            nbCaracteres = recv (descripteurDeSocket, buffer, 1024, 0);
 
-        do{
-                nbCaracteres = recv (descripteurDeSocket, buffer, 1024, 0);
+            for (i = 0; i < nbCaracteres; i++)
+            printf ("%c", buffer [i]);
 
-                for (i = 0; i < nbCaracteres; i++)
-                printf ("%c", buffer [i]);
+    }while (nbCaracteres == 1024);
 
-        }while (nbCaracteres == 1024);
-
-            // printf ("\nCLIENT ++ FIN\n");
-
-        close(descripteurDeSocket);
+        // printf ("\nCLIENT ++ FIN\n");
+    close(descripteurDeSocket);
     
-    
-   
     pthread_exit( (void*) 0);
-  
 }
 /*
 ***************************************************************
@@ -305,7 +286,7 @@ int randomAction(){
 */
 void messageBidon(){
     printf("MAIN *** on envoi un message bidon\n");
-    zmClientBrain[monIndex] = 10;
+    zmClientBrain[monIndex] = 10; // on ajoute un element au tab  zmclient -> brain
     monIndex++;
 }
 
@@ -317,15 +298,12 @@ void messageBidon(){
 ***************************************************************
 */
 void simcritique(){
-
     for (int i = 0; i < 5; i++)
     {
-    printf(".......\n");
-    sleep(1);
+        printf(".......\n");
+        sleep(1);
     }
-
 }
-
 
 /*
 ***************************************************************
@@ -335,12 +313,11 @@ void simcritique(){
 ***************************************************************
 */
 void zoneCritique(){
-    printf("MAIN ***  on demande a entrer en zone critique\n");
 
+    printf("MAIN ***  on demande a entrer en zone critique\n");
     simcritique();
     zmClientBrain[monIndex] = 20;
     monIndex++;
-   
     printf("MAIN *** on sort de la zone critique\n");
 }
 
@@ -352,6 +329,7 @@ void zoneCritique(){
 ***************************************************************
 */
 void actionInterne(){
+
     printf("MAIN *** on monte le compteur interne \n");
     compteurInterne ++;
     zmClientBrain[monIndex] = 30;
@@ -364,11 +342,10 @@ void actionInterne(){
 ***************************************************************
 * thread brain 
 *
-* void*         action  action
-* void*         arg  action
+* VOID* action  action
+* VOID* arg  action
 *
-*
-*return         void*     else
+*return VOID* 
 ***************************************************************
 */
 void* theBrain(void* arguments)
@@ -382,22 +359,22 @@ void* theBrain(void* arguments)
     printf("\n========================================\n INDEX ACTION: %d\n MON PORT :  %d\n COMPTEUR INTERNE : %d\n MON PID : %d\n========================================\n",  monIndex,args->port, compteurInterne, getpid());   
 
     if (myaction == 0 )
-        {
-            pthread_create (&threadclient, NULL, client, &args->port);
-            messageBidon();
-            pthread_join (threadclient, &retourthreadclient);
-            printf("========  le retour du thread client est %ld\n", (long) retourthreadclient);
-        }
-        else if (myaction == 1)
-        {
-            zoneCritique();
-        }
-        else if (myaction == 2)
-        {
-            actionInterne();
-        }
-        else
-        {
-            printf("Je ne connais pas cette action ! \n");
-        }
+    {
+        pthread_create (&threadclient, NULL, client, &args->port);
+        messageBidon();
+        pthread_join (threadclient, &retourthreadclient);
+        printf("========  le retour du thread client est %ld\n", (long) retourthreadclient);
+    }
+    else if (myaction == 1)
+    {
+        zoneCritique();
+    }
+    else if (myaction == 2)
+    {
+        actionInterne();
+    }
+    else
+    {
+        printf("Je ne connais pas cette action ! \n");
+    }
 }
