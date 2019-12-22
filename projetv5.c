@@ -1,19 +1,3 @@
-    /////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////   
-    ///////////////////////           TODO  LIST          ///////////////////////
-    /////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////
-    // -- CHECK SUR LE CONTINUER COMMENT LE GERER                             
-    // -- ENVOIE DES STRUCT DEPUIS LE CLIENT  
-    // -- HORLOGE DE LAMPORT                                
-    // -- AJOUTER UN TROISIEME PROCESS DANS LE TAB DE LA LISTE DES PORTS 
-    /////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////
-    
-
-
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -132,10 +116,10 @@ void*  serveur(void* arg){
     
     struct sockaddr_in adresseDuServeur;
 
-    adresseDuServeur.sin_family      = AF_INET;
-    adresseDuServeur.sin_port        = htons( *(int*)arg);
-    adresseDuServeur.sin_addr.s_addr = INADDR_ANY;
-    int descripteurDeSocketServeur = socket (PF_INET, SOCK_STREAM, 0);
+    adresseDuServeur.sin_family         = AF_INET;
+    adresseDuServeur.sin_port           = htons( *(int*)arg);
+    adresseDuServeur.sin_addr.s_addr    = INADDR_ANY;
+    int descripteurDeSocketServeur      = socket (PF_INET, SOCK_STREAM, 0);
 
 
     if (descripteurDeSocketServeur < 0)
@@ -177,18 +161,24 @@ void*  serveur(void* arg){
         unsigned int       nbCaracteres;
         unsigned int       i;
         char               buffer[1024];
-        memset (buffer, 0, 1024);
+        struct Messageinfos retourmessage;
+        
+        // memset (buffer, 0, 1024);
+        memset(&retourmessage, 0, sizeof retourmessage);
 
         printf("\n SERVEUR ++ Lecture de la requete : \n");
-
-        do
-        {
-        nbCaracteres = recv (descripteurDeSocketClient, buffer, 1024, 0);
-
-        for (i=0; i<nbCaracteres; i++)
-            printf ("%c", buffer [i]);
-        }
-        while (nbCaracteres == 1024);
+            
+        // nbCaracteres = recv (descripteurDeSocketClient, buffer, 1024, 0);
+        recv (descripteurDeSocketClient, (void*)&retourmessage, sizeof(retourmessage), 0);
+        printf("mon index       ---> %d\n", retourmessage.indexinterne );
+        printf("zone critique   ---> %d\n", retourmessage.zonecritique );
+        printf("mon estampile   ---> %d\n", retourmessage.estampille );
+        // do
+        // {
+        // for (i=0; i<nbCaracteres; i++)
+        //     printf ("%c", message.text[i]);
+        // }
+        // while (nbCaracteres == 1024);
 
 
         printf("\n SERVEUR ++ Ecriture de la reponse : %s\n", reponse);
@@ -238,14 +228,14 @@ void* client(void* arg){
 
        
     printf ("CLIENT ++ socket connectee\n");
-    // strcpy(messageclient.text, "coucou test avec struct");
-    // messageclient.indexinterne  = monIndex;
-    // messageclient.zonecritique  = 1;
-    // messageclient.estampille    = 10;
+    strcpy(messageclient.text   , "coucou test avec struct");
+    messageclient.indexinterne  = monIndex;
+    messageclient.zonecritique  = 1;
+    messageclient.estampille    = 10;
     // pintf ("CLIENT ++ Envoi de la requete : %s \n", requete);
 
-    // send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
-    send(descripteurDeSocket, &requete, strlen(requete), 0);
+    send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
+    // send(descripteurDeSocket, &requete, strlen(requete), 0);
 
     char          buffer[1024];
     unsigned int  nbCaracteres;
@@ -378,3 +368,19 @@ void* theBrain(void* arguments)
         printf("Je ne connais pas cette action ! \n");
     }
 }
+
+    /////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////   
+    ///////////////////////           TODO  LIST          ///////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+    // -- CHECK SUR LE CONTINUER COMMENT LE GERER                              //
+    // -- ENVOIE DES STRUCT DEPUIS LE CLIENT                                   //
+    // -- HORLOGE DE LAMPORT                                                   //
+    // -- AJOUTER UN TROISIEME PROCESS DANS LE TAB DE LA LISTE DES PORTS       //
+    /////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+    
+
+
