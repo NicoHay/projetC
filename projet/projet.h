@@ -26,6 +26,7 @@ extern struct Messageinfos {
     int      estampille;
     char     text[50];
     int      zonecritique;
+    int      monpid;
 }Messageinfos;  
 
 

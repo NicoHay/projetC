@@ -17,18 +17,9 @@
 int compteurInterne = 0;
 int monIndex        = 0;
 int continuer       = 1;
-int    zmClientBrain[50] ;
-int    zmServerBrain[50];
-int    listePort[2];
-
-// struct Messageinfos {
-//     int      indexinterne;
-//     int      estampille;
-//     char     text[50];
-//     int      zonecritique;
-// };  
-
-
+int zmClientBrain[50];
+int zmServerBrain[50];
+int listePort[2];
 
 /*
 ***************************************************************
@@ -41,14 +32,14 @@ int    listePort[2];
 */
 void*  serveur(void* arg){
 
-    
+    struct Messageinfos messagefromclient;
+    struct Messageinfos messagetoclient;
     struct sockaddr_in adresseDuServeur;
 
     adresseDuServeur.sin_family         = AF_INET;
     adresseDuServeur.sin_port           = htons( *(int*)arg);
-    adresseDuServeur.sin_addr.s_addr    = INADDR_ANY;
+    adresseDuServeur.sin_addr.s_addr    = inet_addr("127.0.0.1");
     int descripteurDeSocketServeur      = socket (PF_INET, SOCK_STREAM, 0);
-
 
     if (descripteurDeSocketServeur < 0)
     {
@@ -56,7 +47,7 @@ void*  serveur(void* arg){
         pthread_exit( (void*) -1);
     }
 
-    // printf ("SERVEUR === Socket cree\n");
+    printf ("SERVEUR === Socket cree\n");
 
     if ( bind ( descripteurDeSocketServeur, (struct sockaddr *)&adresseDuServeur, sizeof(struct sockaddr_in) ) < 0)
     {
@@ -64,7 +55,7 @@ void*  serveur(void* arg){
         pthread_exit((void*) -1) ;
     }
 
-    // printf ("SERVEUR === Socket liee\n");
+    printf ("SERVEUR === Socket liee\n");
 
     if ( listen ( descripteurDeSocketServeur, 1) < 0)
     {
@@ -78,32 +69,37 @@ void*  serveur(void* arg){
         struct sockaddr_in adresseDuClient;
         unsigned int       longueurDeAdresseDuClient;
 
-        // printf ("SERVEUR ++ Socket en attente\n");
+        printf ("SERVEUR ++ Socket en attente\n");
 
         descripteurDeSocketClient = accept (descripteurDeSocketServeur, (struct sockaddr *)&adresseDuClient, &longueurDeAdresseDuClient);
 
-      //  unsigned int       nbCaracteres;
-      //  unsigned int       i;
-      //  char               buffer[1024];
-        struct Messageinfos retourmessage;
-        
-        // memset (buffer, 0, 1024);
-        memset(&retourmessage, 0, sizeof retourmessage);
+        memset(&messagefromclient, 0, sizeof messagefromclient);
 
         printf("\n SERVEUR ++ Lecture de la requete : \n");
             
-        // nbCaracteres = recv (descripteurDeSocketClient, buffer, 1024, 0);
-        recv (descripteurDeSocketClient, (void*)&retourmessage, sizeof(retourmessage), 0);
-        printf("mon index       ---> %d\n", retourmessage.indexinterne );
-        printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++" );
-        printf("zone critique   ---> %d\n", retourmessage.zonecritique );
-        printf("mon estampile   ---> %d\n", retourmessage.estampille );
+        recv (descripteurDeSocketClient, &messagefromclient, sizeof(messagefromclient), 0);
+
+
+        printf("mon index       ---> %d\n", messagefromclient.indexinterne );
+        printf("mon message     ---> %s\n", messagefromclient.text );
+        printf("zone critique   ---> %d\n", messagefromclient.zonecritique );
+        printf("mon estampile   ---> %d\n", messagefromclient.estampille );
+        printf("mon pid         ---> %d\n", messagefromclient.monpid );
         
         printf("\n SERVEUR ++ Ecriture de la reponse : %s\n", reponse);
 
+
+        messagetoclient.indexinterne  = monIndex;
+        messagetoclient.zonecritique  = 1;
+        messagetoclient.estampille    = 10;
+        messagetoclient.monpid        = getpid();
+
+
         send(descripteurDeSocketClient, reponse, strlen(reponse), 0);  
         close (descripteurDeSocketClient);
+        fflush(stdin);
     }
+        close (descripteurDeSocketServeur);
         pthread_exit( (void*) 0);
 }
 
@@ -121,57 +117,38 @@ void* client(void* arg){
     struct Messageinfos messageclient;
     struct sockaddr_in adr;
 
-    adr.sin_family      = AF_INET;
-    adr.sin_port        = htons( *(int *)arg);
-    adr.sin_addr.s_addr = INADDR_ANY ;
+    adr.sin_family          = AF_INET;
+    adr.sin_port            = htons( *(int *)arg);
+    adr.sin_addr.s_addr     = inet_addr("127.0.0.1");
     int descripteurDeSocket = socket (AF_INET, SOCK_STREAM, 0);
 
 
     if (descripteurDeSocket < 0 )
     {
         printf ("CLIENT ++ Problemes pour creer la socket\n");
-    
         pthread_exit( (void*) -1);
     }
-
-    //   printf ("CLIENT ++ socket cree\n");
-
+      printf ("CLIENT ++ socket cree\n");
 
     if (connect ( descripteurDeSocket,(struct sockaddr *) &adr, sizeof(adr)) < 0)
     {
         printf ("CLIENT ++ Problemes pour se connecter au serveur\n");
         pthread_exit( (void*) -1);
-
     }
 
-       
     printf ("CLIENT ++ socket connectee\n");
+
     strcpy(messageclient.text   , "coucou test avec struct");
     messageclient.indexinterne  = monIndex;
     messageclient.zonecritique  = 1;
     messageclient.estampille    = 10;
-    // pintf ("CLIENT ++ Envoi de la requete : %s \n", requete);
+    messageclient.monpid        = getpid();
 
     send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
-    // send(descripteurDeSocket, &requete, strlen(requete), 0);
 
-    char          buffer[1024];
-    unsigned int  nbCaracteres;
-    unsigned int  i;
-
-    printf ("CLIENT ++ Reception de la reponse : \n");
-
-    do{
-        nbCaracteres = recv (descripteurDeSocket, buffer, 1024, 0);
-
-        for (i = 0; i < nbCaracteres; i++)
-        printf ("%c", buffer [i]);
-
-    }while (nbCaracteres == 1024);
-
-        // printf ("\nCLIENT ++ FIN\n");
+    printf ("\nCLIENT ++ FIN\n");
+    fflush(stdin);
     close(descripteurDeSocket);
-    
     pthread_exit( (void*) 0);
 }
 /*
@@ -182,7 +159,7 @@ void* client(void* arg){
 ***************************************************************
 */
 int randomAction(){
-    return rand() % 3;
+    return rand() % 2;
 }
 
 /*
@@ -193,7 +170,10 @@ int randomAction(){
 ***************************************************************
 */
 void messageBidon(){
+    printf("\n==============================\n");   
     printf("MAIN *** on envoi un message bidon\n");
+    printf("\n==============================\n");   
+    sleep(1);
     zmClientBrain[monIndex] = 10; // on ajoute un element au tab  zmclient -> brain
     monIndex++;
 }
@@ -237,14 +217,15 @@ void zoneCritique(){
 ***************************************************************
 */
 void actionInterne(){
-
+    printf("\n ==============================\n");   
     printf("MAIN *** on monte le compteur interne \n");
+    printf("==============================\n");   
+    sleep(1);
     compteurInterne ++;
     zmClientBrain[monIndex] = 30;
     monIndex++;
     printf("MAIN ***  le compteur est a : %d\n", compteurInterne);
 }
-
 
 /*
 ***************************************************************
@@ -258,32 +239,25 @@ void actionInterne(){
 */
 void* theBrain(void* arguments)
 {
- 
     struct arg_struct *args = (struct arg_struct *)arguments;
     pthread_t threadclient;  
     void * retourthreadclient;
     int myaction =  args->action;
-
-    printf("\n========================================\n INDEX ACTION: %d\n MON PORT :  %d\n COMPTEUR INTERNE : %d\n MON PID : %d\n========================================\n",  monIndex,args->port, compteurInterne, getpid());   
+    printf("\n ==============================\n MON PORT :  %d\n ==============================\n", args->port );   
 
     if (myaction == 0 )
     {
         pthread_create (&threadclient, NULL, client, &args->port);
         messageBidon();
         pthread_join (threadclient, &retourthreadclient);
-        printf("========  le retour du thread client est %ld\n", (long) retourthreadclient);
     }
-    else if (myaction == 1)
+    if (myaction == 1)
     {
         zoneCritique();
     }
-    else if (myaction == 2)
+    if (myaction == 2)
     {
         actionInterne();
-    }
-    else
-    {
-        printf("Je ne connais pas cette action ! \n");
     }
     pthread_exit( (void*) 0);
 }
