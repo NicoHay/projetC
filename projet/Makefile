@@ -21,4 +21,4 @@ clean:
 	rm -f *.o $(OUT) 
 
 run: 
-	./$(OUT) ${ARGS1} ${ARGS2} 
+	./$(OUT) ${PORT1} ${PORT2} 

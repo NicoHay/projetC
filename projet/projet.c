@@ -14,9 +14,9 @@
 
 //variables
 
-compteurInterne = 0;
-monIndex        = 0;
-continuer       = 1;
+int compteurInterne = 0;
+int monIndex        = 0;
+int continuer       = 1;
 int    zmClientBrain[50] ;
 int    zmServerBrain[50];
 int    listePort[2];
@@ -66,15 +66,11 @@ void*  serveur(void* arg){
 
     // printf ("SERVEUR === Socket liee\n");
 
-
-
     if ( listen ( descripteurDeSocketServeur, 1) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le listen\n");
         pthread_exit((void*) -1); 
     }
-
-
 
     while(monIndex < NBRE_TOURS -1)
     {
@@ -86,9 +82,9 @@ void*  serveur(void* arg){
 
         descripteurDeSocketClient = accept (descripteurDeSocketServeur, (struct sockaddr *)&adresseDuClient, &longueurDeAdresseDuClient);
 
-        unsigned int       nbCaracteres;
-        unsigned int       i;
-        char               buffer[1024];
+      //  unsigned int       nbCaracteres;
+      //  unsigned int       i;
+      //  char               buffer[1024];
         struct Messageinfos retourmessage;
         
         // memset (buffer, 0, 1024);
@@ -103,7 +99,6 @@ void*  serveur(void* arg){
         printf("zone critique   ---> %d\n", retourmessage.zonecritique );
         printf("mon estampile   ---> %d\n", retourmessage.estampille );
         
-
         printf("\n SERVEUR ++ Ecriture de la reponse : %s\n", reponse);
 
         send(descripteurDeSocketClient, reponse, strlen(reponse), 0);  
@@ -290,4 +285,5 @@ void* theBrain(void* arguments)
     {
         printf("Je ne connais pas cette action ! \n");
     }
+    pthread_exit( (void*) 0);
 }
