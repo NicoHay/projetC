@@ -8,18 +8,19 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <time.h> 
+#include <semaphore.h>
 
 // entete 
 #include "projet.h" 
 
 //variables
-
 int compteurInterne = 0;
 int monIndex        = 0;
 int continuer       = 1;
 int zmClientBrain[50];
 int zmServerBrain[50];
 int listePort[2];
+sem_t semaphore;
 
 /*
 ***************************************************************
@@ -46,17 +47,13 @@ void*  serveur(void* arg){
         printf ("SERVEUR === Problemes pour creer la socket\n");
         pthread_exit( (void*) -1);
     }
-
-    printf ("SERVEUR === Socket cree\n");
-
+    // printf ("SERVEUR === Socket cree\n");
     if ( bind ( descripteurDeSocketServeur, (struct sockaddr *)&adresseDuServeur, sizeof(struct sockaddr_in) ) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le bind\n");
         pthread_exit((void*) -1) ;
     }
-
-    printf ("SERVEUR === Socket liee\n");
-
+    // printf ("SERVEUR === Socket liee\n");
     if ( listen ( descripteurDeSocketServeur, 1) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le listen\n");
@@ -79,23 +76,21 @@ void*  serveur(void* arg){
             
         recv (descripteurDeSocketClient, &messagefromclient, sizeof(messagefromclient), 0);
 
-
+        //debug 
         printf("mon index       ---> %d\n", messagefromclient.indexinterne );
         printf("mon message     ---> %s\n", messagefromclient.text );
-        printf("zone critique   ---> %d\n", messagefromclient.zonecritique );
         printf("mon estampile   ---> %d\n", messagefromclient.estampille );
         printf("mon pid         ---> %d\n", messagefromclient.monpid );
-        
-        printf("\n SERVEUR ++ Ecriture de la reponse : %s\n", reponse);
+        printf("\n SERVEUR ++ Ecriture de la reponse \n");
 
 
         messagetoclient.indexinterne  = monIndex;
-        messagetoclient.zonecritique  = 1;
         messagetoclient.estampille    = 10;
         messagetoclient.monpid        = getpid();
 
 
-        send(descripteurDeSocketClient, reponse, strlen(reponse), 0);  
+        // send(descripteurDeSocketClient, reponse, strlen(reponse), 0);  
+        send(descripteurDeSocketClient, &messagetoclient, sizeof(messagetoclient), 0);
         close (descripteurDeSocketClient);
         fflush(stdin);
     }
@@ -114,7 +109,7 @@ void*  serveur(void* arg){
 */
 void* client(void* arg){
     
-    struct Messageinfos messageclient;
+    struct Messageinfos messagetoserveur;
     struct sockaddr_in adr;
 
     adr.sin_family          = AF_INET;
@@ -138,17 +133,16 @@ void* client(void* arg){
 
     printf ("CLIENT ++ socket connectee\n");
 
-    strcpy(messageclient.text   , "coucou test avec struct");
-    messageclient.indexinterne  = monIndex;
-    messageclient.zonecritique  = 1;
-    messageclient.estampille    = 10;
-    messageclient.monpid        = getpid();
+    strcpy(messagetoserveur.text   , "coucou test avec struct");
+    messagetoserveur.indexinterne  = monIndex;
+    messagetoserveur.estampille    = 10;
+    messagetoserveur.monpid        = getpid();
 
-    send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
+    send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
 
-    printf ("\nCLIENT ++ FIN\n");
     fflush(stdin);
     close(descripteurDeSocket);
+    printf ("\nCLIENT ++ FIN\n");
     pthread_exit( (void*) 0);
 }
 /*
@@ -174,7 +168,8 @@ void messageBidon(){
     printf("MAIN *** on envoi un message bidon\n");
     printf("\n==============================\n");   
     sleep(1);
-    zmClientBrain[monIndex] = 10; // on ajoute un element au tab  zmclient -> brain
+
+    // zmClientBrain[monIndex] = 10; // on ajoute un element au tab  zmclient -> brain
     monIndex++;
 }
 
@@ -260,4 +255,17 @@ void* theBrain(void* arguments)
         actionInterne();
     }
     pthread_exit( (void*) 0);
+}
+
+void    semaphoreZoneMemoire()
+{
+
+  
+    sem_wait(&semaphore);  // On attend la disponibilité du sémaphore
+
+    // section critique *
+    // action a effectuer
+   
+    sem_post(&semaphore);  // On relache le sémaphore
+
 }

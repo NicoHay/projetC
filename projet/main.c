@@ -58,7 +58,8 @@ int main (int argc, char *argv[]){
     pthread_join (threadserveur, &retourserveur);
     printf("======= le retour du thread SERVEUR est :  %ld\n", (long) retourserveur);
 
-
+    //debug de la zone memoire
+    
 	for (int i = 0; i < sizeof(zmClientBrain)/sizeof(zmClientBrain[0]); i++)
 	{
 		printf("[%d] ",zmClientBrain[i]);

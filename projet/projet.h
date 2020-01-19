@@ -10,22 +10,16 @@
 #define NBRE_TOURS  10
 
 //VARIABLES
-// extern int    compteurInterne ;
-// extern int    monIndex ;
-// extern int    continuer;
 extern int    zmClientBrain[50] ;
 extern int    zmServerBrain[50];
 extern int    listePort[2];
 
 
 // STRUCTS
-
-
 extern struct Messageinfos {
     int      indexinterne;
     int      estampille;
     char     text[50];
-    int      zonecritique;
     int      monpid;
 }Messageinfos;  
 
@@ -49,5 +43,6 @@ void    messageBidon();
 void    simcritique();
 void    zoneCritique();
 void    actionInterne();
+void    semaphoreZoneMemoire();
 
 #endif
