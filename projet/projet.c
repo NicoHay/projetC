@@ -15,12 +15,13 @@
 
 //variables
 int compteurInterne = 0;
-int monIndex        = 0;
+int monIndex        = 1;
 int continuer       = 1;
 int zmClientBrain[50];
 int zmServerBrain[50];
 int listePort[2];
-sem_t semaphore;
+sem_t semaphore1;
+sem_t semaphore2;
 
 /*
 ***************************************************************
@@ -53,15 +54,17 @@ void*  serveur(void* arg){
         printf ("SERVEUR === Problemes pour faire le bind\n");
         pthread_exit((void*) -1) ;
     }
-    // printf ("SERVEUR === Socket liee\n");
+    printf ("SERVEUR === Socket liee\n");
     if ( listen ( descripteurDeSocketServeur, 1) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le listen\n");
         pthread_exit((void*) -1); 
     }
+    
 
-    while(monIndex < NBRE_TOURS -1)
+    while(monIndex<NBRE_TOURS -1)
     {
+ 
         int                descripteurDeSocketClient;
         struct sockaddr_in adresseDuClient;
         unsigned int       longueurDeAdresseDuClient;
@@ -88,13 +91,13 @@ void*  serveur(void* arg){
         messagetoclient.estampille    = 10;
         messagetoclient.monpid        = getpid();
 
-
-        // send(descripteurDeSocketClient, reponse, strlen(reponse), 0);  
         send(descripteurDeSocketClient, &messagetoclient, sizeof(messagetoclient), 0);
         close (descripteurDeSocketClient);
-        fflush(stdin);
+        fflush(stdout);
     }
+        
         close (descripteurDeSocketServeur);
+        printf("***********----------fin du serveur ");
         pthread_exit( (void*) 0);
 }
 
@@ -140,7 +143,7 @@ void* client(void* arg){
 
     send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
 
-    fflush(stdin);
+    fflush(stdout);
     close(descripteurDeSocket);
     printf ("\nCLIENT ++ FIN\n");
     pthread_exit( (void*) 0);
@@ -153,7 +156,8 @@ void* client(void* arg){
 ***************************************************************
 */
 int randomAction(){
-    return rand() % 2;
+ 
+    return rand() % 3;
 }
 
 /*
@@ -168,8 +172,7 @@ void messageBidon(){
     printf("MAIN *** on envoi un message bidon\n");
     printf("\n==============================\n");   
     sleep(1);
-
-    // zmClientBrain[monIndex] = 10; // on ajoute un element au tab  zmclient -> brain
+    semaphoreZoneMemoireClient(10);
     monIndex++;
 }
 
@@ -199,8 +202,9 @@ void zoneCritique(){
 
     printf("MAIN ***  on demande a entrer en zone critique\n");
     simcritique();
-    zmClientBrain[monIndex] = 20;
+    semaphoreZoneMemoireClient(20);
     monIndex++;
+    compteurInterne++;
     printf("MAIN *** on sort de la zone critique\n");
 }
 
@@ -215,10 +219,9 @@ void actionInterne(){
     printf("\n ==============================\n");   
     printf("MAIN *** on monte le compteur interne \n");
     printf("==============================\n");   
-    sleep(1);
-    compteurInterne ++;
-    zmClientBrain[monIndex] = 30;
+    semaphoreZoneMemoireClient(30);
     monIndex++;
+    compteurInterne++;
     printf("MAIN ***  le compteur est a : %d\n", compteurInterne);
 }
 
@@ -238,34 +241,46 @@ void* theBrain(void* arguments)
     pthread_t threadclient;  
     void * retourthreadclient;
     int myaction =  args->action;
-    printf("\n ==============================\n MON PORT :  %d\n ==============================\n", args->port );   
+ 
 
-    if (myaction == 0 )
+    switch (myaction)
     {
+    case 0:
         pthread_create (&threadclient, NULL, client, &args->port);
         messageBidon();
         pthread_join (threadclient, &retourthreadclient);
-    }
-    if (myaction == 1)
-    {
+        break;
+    case 1:
         zoneCritique();
-    }
-    if (myaction == 2)
-    {
+        break;
+    case 2: 
         actionInterne();
+
+        break;
+    default:
+          pthread_exit( (void*) 0);
+
+        break;
     }
     pthread_exit( (void*) 0);
+
 }
 
-void    semaphoreZoneMemoire()
+void    semaphoreZoneMemoireClient(int num1 )
 {
+    sem_init(&semaphore1, 0, 1);
+    sem_wait(&semaphore1);  // On attend la disponibilité du sémaphore
+    zmClientBrain[monIndex] = num1;
+    sem_post(&semaphore1);  // On relache le sémaphore
 
-  
-    sem_wait(&semaphore);  // On attend la disponibilité du sémaphore
+}
 
-    // section critique *
-    // action a effectuer
-   
-    sem_post(&semaphore);  // On relache le sémaphore
+
+void    semaphoreZoneMemoireServeur(int num)
+{
+    sem_init(&semaphore2, 0, 1);
+    sem_wait(&semaphore2);  // On attend la disponibilité du sémaphore
+    zmServerBrain[monIndex] = num;
+    sem_post(&semaphore2);  // On relache le sémaphore
 
 }

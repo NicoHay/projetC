@@ -43,6 +43,7 @@ void    messageBidon();
 void    simcritique();
 void    zoneCritique();
 void    actionInterne();
-void    semaphoreZoneMemoire();
+void    semaphoreZoneMemoireServeur(int num);
+void    semaphoreZoneMemoireClient(int num1 );
 
 #endif

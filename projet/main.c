@@ -37,6 +37,7 @@ int main (int argc, char *argv[]){
     
  
     srand((unsigned) time(&t));
+   
  
     pthread_create (&threadserveur, NULL, serveur, (void *) &listePort[0]);
    
@@ -44,6 +45,7 @@ int main (int argc, char *argv[]){
 
     for (int i = 0; i < NBRE_TOURS; i++)
     {
+
         action =  randomAction();
 
         args.action    = action;
@@ -56,7 +58,6 @@ int main (int argc, char *argv[]){
     }
 
     pthread_join (threadserveur, &retourserveur);
-    printf("======= le retour du thread SERVEUR est :  %ld\n", (long) retourserveur);
 
     //debug de la zone memoire
     
