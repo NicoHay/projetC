@@ -59,6 +59,7 @@ void*  serveur(void* arg){
         printf ("SERVEUR === Problemes pour faire le listen\n");
         pthread_exit((void*) -1); 
     }
+    
 
 
     while( compteurInterne < NBRE_TOURS )
@@ -83,6 +84,7 @@ void*  serveur(void* arg){
 
         close (descripteurDeSocketClient);
     }
+        
         close (descripteurDeSocketServeur);
         printf("***********----------fin du serveur ");
         fflush(stdout);
