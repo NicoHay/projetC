@@ -5,27 +5,19 @@
 // VARIABLES GLOBALES 
 //==============================
 
-#define requete     "CLIENT  +++ message du client => bonjour ici le client"
-#define reponse     "SERVEUR +++ message du serveur => bonsoir ici le serveur"
+
 #define NBRE_TOURS  10
 
 //VARIABLES
-// extern int    compteurInterne ;
-// extern int    monIndex ;
-// extern int    continuer;
 extern int    zmClientBrain[50] ;
 extern int    zmServerBrain[50];
-extern int    listePort[2];
+
 
 
 // STRUCTS
-
-
 extern struct Messageinfos {
     int      indexinterne;
     int      estampille;
-    char     text[50];
-    int      zonecritique;
     int      monpid;
 }Messageinfos;  
 
@@ -44,10 +36,12 @@ extern struct arg_struct {
 void*   theBrain(void* arguments);
 void*   serveur(void* arg);
 void*   client(void* arg);
-int     randomAction();
+int     randomNum();
 void    messageBidon();
 void    simcritique();
 void    zoneCritique();
 void    actionInterne();
+void    semaphoreZoneMemoireServeur(int num);
+void    semaphoreZoneMemoireClient(int num1 );
 
 #endif

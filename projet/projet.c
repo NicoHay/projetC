@@ -8,18 +8,18 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <time.h> 
+#include <semaphore.h>
 
 // entete 
 #include "projet.h" 
 
 //variables
-
 int compteurInterne = 0;
-int monIndex        = 1;
-int continuer       = 1;
+int monIndex        = 0;
 int zmClientBrain[50];
 int zmServerBrain[50];
-int listePort[2];
+sem_t semaphore1;
+sem_t semaphore2;
 
 /*
 ***************************************************************
@@ -40,54 +40,53 @@ void*  serveur(void* arg){
     adresseDuServeur.sin_addr.s_addr    = inet_addr("127.0.0.1");
     int descripteurDeSocketServeur      = socket (PF_INET, SOCK_STREAM, 0);
 
+
+
     if (descripteurDeSocketServeur < 0)
     {
         printf ("SERVEUR === Problemes pour creer la socket\n");
         pthread_exit( (void*) -1);
     }
-
-    printf ("SERVEUR === Socket cree\n");
-
+    // printf ("SERVEUR === Socket cree\n");
     if ( bind ( descripteurDeSocketServeur, (struct sockaddr *)&adresseDuServeur, sizeof(struct sockaddr_in) ) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le bind\n");
         pthread_exit((void*) -1) ;
     }
-
     printf ("SERVEUR === Socket liee\n");
-
     if ( listen ( descripteurDeSocketServeur, 1) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le listen\n");
         pthread_exit((void*) -1); 
     }
 
-    while(monIndex < NBRE_TOURS )
+
+    while( compteurInterne < NBRE_TOURS )
     {
+ 
         int                descripteurDeSocketClient;
         struct sockaddr_in adresseDuClient;
         unsigned int       longueurDeAdresseDuClient;
 
         printf ("SERVEUR ++ Socket en attente\n");
-
+        fflush(stdout);
         descripteurDeSocketClient = accept (descripteurDeSocketServeur, (struct sockaddr *)&adresseDuClient, &longueurDeAdresseDuClient);
 
-        memset(&messagefromclient, 0, sizeof messagefromclient);
 
-        printf("\n SERVEUR ++ Lecture de la requete : \n");
-            
         recv (descripteurDeSocketClient, &messagefromclient, sizeof(messagefromclient), 0);
 
-        printf("index               ---> %d\n", messagefromclient.indexinterne );
-        printf("message             ---> %s\n", messagefromclient.text );
-        printf("zone critique       ---> %d\n", messagefromclient.zonecritique );
-        printf("compteur interne    ---> %d\n", messagefromclient.estampille );
-        printf("pid                 ---> %d\n", messagefromclient.monpid );
-
+        //debug 
+        printf(" index du client      ---> %d\n", messagefromclient.indexinterne );
+        printf(" estampile du client  ---> %d\n", messagefromclient.estampille );
+        printf(" pid  du client       ---> %d\n", messagefromclient.monpid );
         fflush(stdout);
+
+        close (descripteurDeSocketClient);
     }
         close (descripteurDeSocketServeur);
-        pthread_exit( (void*) 0);
+        printf("***********----------fin du serveur ");
+        fflush(stdout);
+        pthread_exit( 0);
 }
 
 /*
@@ -101,14 +100,13 @@ void*  serveur(void* arg){
 */
 void* client(void* arg){
     
-    struct Messageinfos messageclient;
+    struct Messageinfos messagetoserveur;
     struct sockaddr_in adr;
 
     adr.sin_family          = AF_INET;
     adr.sin_port            = htons( *(int *)arg);
     adr.sin_addr.s_addr     = inet_addr("127.0.0.1");
     int descripteurDeSocket = socket (AF_INET, SOCK_STREAM, 0);
-
 
     if (descripteurDeSocket < 0 )
     {
@@ -120,33 +118,34 @@ void* client(void* arg){
     if (connect ( descripteurDeSocket,(struct sockaddr *) &adr, sizeof(adr)) < 0)
     {
         printf ("CLIENT ++ Problemes pour se connecter au serveur\n");
-        pthread_exit( (void*) -1);
+        
+        pthread_exit(0);
     }
 
     printf ("CLIENT ++ socket connectee\n");
+    fflush(stdout);
 
-    strcpy(messageclient.text   , "coucou test avec struct");
-    messageclient.indexinterne  = monIndex;
-    messageclient.zonecritique  = 1;
-    messageclient.estampille    = compteurInterne;
-    messageclient.monpid        = getpid();
+    messagetoserveur.indexinterne  = compteurInterne;
+    messagetoserveur.estampille    = 10;
+    messagetoserveur.monpid        = getpid();
 
-    send(descripteurDeSocket, &messageclient, sizeof(messageclient), 0);
+    send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
 
-    printf ("\nCLIENT ++ FIN\n");
-    fflush(stdin);
     close(descripteurDeSocket);
+    printf ("\nCLIENT ++ FIN\n");
+    fflush(stdout);
     pthread_exit( (void*) 0);
 }
 /*
 ***************************************************************
-* randomAction
+* randomNum
 *
 *return         int 
 ***************************************************************
 */
-int randomAction(){
-    return rand() % 2;
+int randomNum(){
+ 
+    return rand() % 3;
 }
 
 /*
@@ -157,11 +156,10 @@ int randomAction(){
 ***************************************************************
 */
 void messageBidon(){
+    compteurInterne++;
+    printf("\n== *** on envoi un message bidon\n");
+    semaphoreZoneMemoireClient(10);
  
-    printf("\n============================== *** on envoi un message bidon\n");
-    sleep(1);
-    zmClientBrain[monIndex] = 10; // on ajoute un element au tab  zmclient -> brain
-    monIndex++;
 }
 
 /*
@@ -172,7 +170,10 @@ void messageBidon(){
 ***************************************************************
 */
 void simcritique(){
-    for (int i = 0; i < 5; i++)
+
+    int tps;
+    tps = randomNum();
+    for (int i = 0; i < tps; i++)
     {
         printf(".......\n");
         sleep(1);
@@ -187,14 +188,10 @@ void simcritique(){
 ***************************************************************
 */
 void zoneCritique(){
-
-    printf("\n============================== ***  on demande a entrer en zone critique\n");
+    compteurInterne++;
     simcritique();
-    zmClientBrain[monIndex] = 20;
-    monIndex++;
-    printf("MAIN *** on sort de la zone critique\n");
+    semaphoreZoneMemoireClient(20);
 }
-
 /*
 ***************************************************************
 * actionInterne
@@ -203,11 +200,10 @@ void zoneCritique(){
 ***************************************************************
 */
 void actionInterne(){
-    printf("\n ============================== *** on monte le compteur interne \n");
-    compteurInterne ++;
+
+    compteurInterne++;
     zmClientBrain[monIndex] = 30;
-    monIndex++;
-    printf("MAIN ***  le compteur est a : %d\n", compteurInterne);
+    printf(" ***  le compteur est a : %d\n", compteurInterne);
 }
 
 /*
@@ -225,27 +221,53 @@ void* theBrain(void* arguments)
     struct arg_struct *args = (struct arg_struct *)arguments;
     pthread_t threadclient;  
     void * retourthreadclient;
-    int myaction =  args->action; 
+    int myaction =  args->action;
+ 
 
-    if (myaction == 0 )
+    switch (myaction)
     {
+    case 0:
+        monIndex++;
         pthread_create (&threadclient, NULL, client, &args->port);
         messageBidon();
         pthread_join (threadclient, &retourthreadclient);
-    }
-    if (myaction == 1)
-    {
-        pthread_create (&threadclient, NULL, client, &args->port);
+        printf("fin du message bidon");
+        break;
+    case 1:
+        monIndex++;
         zoneCritique();
-        pthread_join (threadclient, &retourthreadclient);
-    }
-    if (myaction == 2)
-    {
+        break;
+    case 2: 
+        monIndex++;
         actionInterne();
+        break;
     }
-    if (myaction > 2)
-    {
-        printf("\n ================ pas compris qoi que tu veut =============");   
-    }
+
     pthread_exit( (void*) 0);
+
 }
+
+void    semaphoreZoneMemoireClient(int num1 )
+{
+    sem_init(&semaphore1, 0, 1);
+    sem_wait(&semaphore1);  // On attend la disponibilité du sémaphore
+    zmClientBrain[monIndex] = num1;
+    sem_post(&semaphore1);  // On relache le sémaphore
+
+}
+
+
+void    semaphoreZoneMemoireServeur(int num)
+{
+    sem_init(&semaphore2, 0, 1);
+    sem_wait(&semaphore2);  // On attend la disponibilité du sémaphore
+    zmServerBrain[monIndex] = num;
+    sem_post(&semaphore2);  // On relache le sémaphore
+
+}
+
+
+
+// TODO        
+//              POUSSER LA STRUCT DANS LE TABLEAU POUR CHECKER LAMPORT
+//              IMPLEMENTER LAMPORT

@@ -24,7 +24,8 @@ int main (int argc, char *argv[]){
     pthread_t threadserveur;
     pthread_t threadbrain;
     time_t  t;
-   
+    int    listePort[2];
+
     int action;
     void* retourserveur ;
     void* retourbrain ;
@@ -37,6 +38,7 @@ int main (int argc, char *argv[]){
     
  
     srand((unsigned) time(&t));
+   
  
     pthread_create (&threadserveur, NULL, serveur, (void *) &listePort[0]);
    
@@ -44,10 +46,11 @@ int main (int argc, char *argv[]){
 
     for (int i = 0; i < NBRE_TOURS; i++)
     {
-        action =  randomAction();
+
+        action =  randomNum();
 
         args.action    = action;
-        args.port      = listePort[0];
+        args.port      = listePort[1];
         args.nbre_tour = i;
 
         pthread_create (&threadbrain, NULL, theBrain,(void* ) &args);
@@ -56,14 +59,14 @@ int main (int argc, char *argv[]){
     }
 
     pthread_join (threadserveur, &retourserveur);
-    printf("======= le retour du thread SERVEUR est :  %ld\n", (long) retourserveur);
 
-
+    //debug de la zone memoire
+    
 	for (int i = 0; i < sizeof(zmClientBrain)/sizeof(zmClientBrain[0]); i++)
 	{
 		printf("[%d] ",zmClientBrain[i]);
 	}
 	
-
+    sleep(5);
     return 0;
 }
