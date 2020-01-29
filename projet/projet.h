@@ -6,7 +6,7 @@
 //==============================
 
 
-#define NBRE_TOURS  10
+#define NBRE_TOURS  30 
 
 //VARIABLES
 extern int    zmClientBrain[50] ;
@@ -16,7 +16,7 @@ extern int    zmServerBrain[50];
 
 // STRUCTS
 extern struct Messageinfos {
-    int      indexinterne;
+    int      compteurinterne;
     int      estampille;
     int      monpid;
 }Messageinfos;  

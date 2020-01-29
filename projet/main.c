@@ -61,12 +61,11 @@ int main (int argc, char *argv[]){
     pthread_join (threadserveur, &retourserveur);
 
     //debug de la zone memoire
-    
+    fflush(stdout);
 	for (int i = 0; i < sizeof(zmClientBrain)/sizeof(zmClientBrain[0]); i++)
 	{
 		printf("[%d] ",zmClientBrain[i]);
 	}
 	
-    sleep(5);
     return 0;
 }

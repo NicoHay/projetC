@@ -20,6 +20,7 @@ int zmClientBrain[50];
 int zmServerBrain[50];
 sem_t semaphore1;
 sem_t semaphore2;
+struct Messageinfos messagefromclient;
 
 /*
 ***************************************************************
@@ -32,7 +33,7 @@ sem_t semaphore2;
 */
 void*  serveur(void* arg){
 
-    struct Messageinfos messagefromclient;
+ 
     struct sockaddr_in adresseDuServeur;
 
     adresseDuServeur.sin_family         = AF_INET;
@@ -47,48 +48,46 @@ void*  serveur(void* arg){
         printf ("SERVEUR === Problemes pour creer la socket\n");
         pthread_exit( (void*) -1);
     }
-    // printf ("SERVEUR === Socket cree\n");
+
     if ( bind ( descripteurDeSocketServeur, (struct sockaddr *)&adresseDuServeur, sizeof(struct sockaddr_in) ) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le bind\n");
         pthread_exit((void*) -1) ;
     }
-    printf ("SERVEUR === Socket liee\n");
+
     if ( listen ( descripteurDeSocketServeur, 1) < 0)
     {
         printf ("SERVEUR === Problemes pour faire le listen\n");
         pthread_exit((void*) -1); 
     }
-    
 
-
-    while( compteurInterne < NBRE_TOURS )
+    while( NBRE_TOURS > monIndex  )
     {
  
         int                descripteurDeSocketClient;
         struct sockaddr_in adresseDuClient;
         unsigned int       longueurDeAdresseDuClient;
 
-        printf ("SERVEUR ++ Socket en attente\n");
-        fflush(stdout);
         descripteurDeSocketClient = accept (descripteurDeSocketServeur, (struct sockaddr *)&adresseDuClient, &longueurDeAdresseDuClient);
 
 
         recv (descripteurDeSocketClient, &messagefromclient, sizeof(messagefromclient), 0);
 
         //debug 
-        printf(" index du client      ---> %d\n", messagefromclient.indexinterne );
-        printf(" estampile du client  ---> %d\n", messagefromclient.estampille );
-        printf(" pid  du client       ---> %d\n", messagefromclient.monpid );
-        fflush(stdout);
+        printf("=================================");
+        printf(" \ncompteur du client   ---> %d\n", messagefromclient.compteurinterne );
+        printf(" \nestampile du client  ---> %d\n", messagefromclient.estampille );
+        printf(" \npid  du client       ---> %d\n", messagefromclient.monpid );
+        printf("=================================");
 
+        fflush(stdout);
         close (descripteurDeSocketClient);
     }
-        
         close (descripteurDeSocketServeur);
+        
         printf("***********----------fin du serveur ");
         fflush(stdout);
-        pthread_exit( 0);
+        pthread_exit( (void*) 0);
 }
 
 /*
@@ -115,27 +114,28 @@ void* client(void* arg){
         printf ("CLIENT ++ Problemes pour creer la socket\n");
         pthread_exit( (void*) -1);
     }
-      printf ("CLIENT ++ socket cree\n");
+      
 
     if (connect ( descripteurDeSocket,(struct sockaddr *) &adr, sizeof(adr)) < 0)
     {
         printf ("CLIENT ++ Problemes pour se connecter au serveur\n");
-        
-        pthread_exit(0);
+        exit( 0);
+
+    }else{
+
+        messagetoserveur.compteurinterne    = compteurInterne;
+        messagetoserveur.estampille         = 10;
+        messagetoserveur.monpid             = getpid();
+
+        send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
+
+        close(descripteurDeSocket);
+        printf ("\nCLIENT ++ FIN\n");
+        fflush(stdout);
+
     }
 
-    printf ("CLIENT ++ socket connectee\n");
-    fflush(stdout);
 
-    messagetoserveur.indexinterne  = compteurInterne;
-    messagetoserveur.estampille    = 10;
-    messagetoserveur.monpid        = getpid();
-
-    send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
-
-    close(descripteurDeSocket);
-    printf ("\nCLIENT ++ FIN\n");
-    fflush(stdout);
     pthread_exit( (void*) 0);
 }
 /*
@@ -173,13 +173,10 @@ void messageBidon(){
 */
 void simcritique(){
 
-    int tps;
-    tps = randomNum();
-    for (int i = 0; i < tps; i++)
-    {
-        printf(".......\n");
-        sleep(1);
-    }
+
+    printf("\n.... zone critique ...\n");
+
+
 }
 
 /*
@@ -205,7 +202,8 @@ void actionInterne(){
 
     compteurInterne++;
     zmClientBrain[monIndex] = 30;
-    printf(" ***  le compteur est a : %d\n", compteurInterne);
+    printf(" \n***  le compteur est a : %d\n", compteurInterne);
+    fflush(stdout);
 }
 
 /*
@@ -230,6 +228,7 @@ void* theBrain(void* arguments)
     {
     case 0:
         monIndex++;
+        sleep(1);
         pthread_create (&threadclient, NULL, client, &args->port);
         messageBidon();
         pthread_join (threadclient, &retourthreadclient);
@@ -237,10 +236,12 @@ void* theBrain(void* arguments)
         break;
     case 1:
         monIndex++;
+        sleep(1);
         zoneCritique();
         break;
     case 2: 
         monIndex++;
+        sleep(1);
         actionInterne();
         break;
     }
