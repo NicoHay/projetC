@@ -16,11 +16,12 @@
 //variables
 int compteurInterne = 0;
 int monIndex        = 0;
-int zmClientBrain[50];
-int zmServerBrain[50];
+struct Messageinfos messagefromclient;
+
+struct Messageinfos  zmClientBrain[50];
+struct Messageinfos  zmServerBrain[50];
 sem_t semaphore1;
 sem_t semaphore2;
-struct Messageinfos messagefromclient;
 
 /*
 ***************************************************************
@@ -74,18 +75,18 @@ void*  serveur(void* arg){
         recv (descripteurDeSocketClient, &messagefromclient, sizeof(messagefromclient), 0);
 
         //debug 
-        printf("=================================");
-        printf(" \ncompteur du client   ---> %d\n", messagefromclient.compteurinterne );
-        printf(" \nestampile du client  ---> %d\n", messagefromclient.estampille );
-        printf(" \npid  du client       ---> %d\n", messagefromclient.monpid );
-        printf("=================================");
+        printf("\n================================");
+        printf("\ncompteur du client   ---> %d", messagefromclient.compteurinterne );
+        printf("\nestampile du client  ---> %d", messagefromclient.estampille );
+        printf("\npid  du client       ---> %d", messagefromclient.monpid );
+        printf("\n================================");
 
         fflush(stdout);
         close (descripteurDeSocketClient);
     }
         close (descripteurDeSocketServeur);
         
-        printf("***********----------fin du serveur ");
+        // printf("***********----------fin du serveur ");
         fflush(stdout);
         pthread_exit( (void*) 0);
 }
@@ -126,7 +127,7 @@ void* client(void* arg){
         messagetoserveur.compteurinterne    = compteurInterne;
         messagetoserveur.estampille         = 10;
         messagetoserveur.monpid             = getpid();
-
+        semaphoreZoneMemoireClient(messagetoserveur);
         send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
 
         close(descripteurDeSocket);
@@ -158,9 +159,9 @@ int randomNum(){
 ***************************************************************
 */
 void messageBidon(){
+
     compteurInterne++;
     printf("\n== *** on envoi un message bidon\n");
-    semaphoreZoneMemoireClient(10);
  
 }
 
@@ -189,7 +190,6 @@ void simcritique(){
 void zoneCritique(){
     compteurInterne++;
     simcritique();
-    semaphoreZoneMemoireClient(20);
 }
 /*
 ***************************************************************
@@ -201,7 +201,6 @@ void zoneCritique(){
 void actionInterne(){
 
     compteurInterne++;
-    zmClientBrain[monIndex] = 30;
     printf(" \n***  le compteur est a : %d\n", compteurInterne);
     fflush(stdout);
 }
@@ -250,21 +249,21 @@ void* theBrain(void* arguments)
 
 }
 
-void    semaphoreZoneMemoireClient(int num1 )
+void   semaphoreZoneMemoireClient(struct Messageinfos mess1 )
 {
     sem_init(&semaphore1, 0, 1);
     sem_wait(&semaphore1);  // On attend la disponibilité du sémaphore
-    zmClientBrain[monIndex] = num1;
+    zmClientBrain[monIndex] = mess1;
     sem_post(&semaphore1);  // On relache le sémaphore
 
 }
 
 
-void    semaphoreZoneMemoireServeur(int num)
+void   semaphoreZoneMemoireServeur(struct Messageinfos mess2)
 {
     sem_init(&semaphore2, 0, 1);
     sem_wait(&semaphore2);  // On attend la disponibilité du sémaphore
-    zmServerBrain[monIndex] = num;
+    zmServerBrain[monIndex] = mess2;
     sem_post(&semaphore2);  // On relache le sémaphore
 
 }

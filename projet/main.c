@@ -46,7 +46,6 @@ int main (int argc, char *argv[]){
 
     for (int i = 0; i < NBRE_TOURS; i++)
     {
-
         action =  randomNum();
 
         args.action    = action;
@@ -55,17 +54,14 @@ int main (int argc, char *argv[]){
 
         pthread_create (&threadbrain, NULL, theBrain,(void* ) &args);
         pthread_join (threadbrain, &retourbrain);
-        
     }
-
     pthread_join (threadserveur, &retourserveur);
 
     //debug de la zone memoire
     fflush(stdout);
 	for (int i = 0; i < sizeof(zmClientBrain)/sizeof(zmClientBrain[0]); i++)
 	{
-		printf("[%d] ",zmClientBrain[i]);
+		printf("\n=============\n[ compteur ->> %d // estampille ->> %d // pid ->> %d ]\n=============",zmClientBrain[i].compteurinterne, zmClientBrain[i].estampille ,zmClientBrain[i].monpid);
 	}
-	
     return 0;
 }

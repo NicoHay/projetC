@@ -6,13 +6,7 @@
 //==============================
 
 
-#define NBRE_TOURS  30 
-
-//VARIABLES
-extern int    zmClientBrain[50] ;
-extern int    zmServerBrain[50];
-
-
+#define NBRE_TOURS  15 
 
 // STRUCTS
 extern struct Messageinfos {
@@ -20,6 +14,10 @@ extern struct Messageinfos {
     int      estampille;
     int      monpid;
 }Messageinfos;  
+
+//VARIABLES
+extern struct Messageinfos  zmClientBrain[50];
+extern struct Messageinfos  zmServerBrain[50];
 
 
 extern struct arg_struct {
@@ -41,7 +39,7 @@ void    messageBidon();
 void    simcritique();
 void    zoneCritique();
 void    actionInterne();
-void    semaphoreZoneMemoireServeur(int num);
-void    semaphoreZoneMemoireClient(int num1 );
+void    semaphoreZoneMemoireClient(struct Messageinfos mess1 );
+void    semaphoreZoneMemoireServeur(struct Messageinfos mess2);
 
 #endif
