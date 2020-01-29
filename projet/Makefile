@@ -1,7 +1,7 @@
 OBJS			= main.o projet.o
 SOURCE			= main.c projet.c
 HEADER			= projet.h
-OUT				= ProjetNL 
+OUT			    = ProjetNico 
 PARAM 			= 4444 5555
 COMPILATEUR	 	= gcc
 FLAGS			= -g -c -Wall
