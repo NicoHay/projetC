@@ -6,11 +6,11 @@
 //==============================
 
 
-#define NBRE_TOURS  15 
+#define NBRE_TOURS  50
+#define MAX(x, y) ( ( (x) > (y) ) ? (x) : (y) )   //recupère la plus grande valeur de deux int
 
 // STRUCTS
 extern struct Messageinfos {
-    int      compteurinterne;
     int      estampille;
     int      monpid;
 }Messageinfos;  

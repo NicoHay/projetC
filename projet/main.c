@@ -33,13 +33,11 @@ int main (int argc, char *argv[]){
     struct arg_struct args;
 
     
-   listePort[0] = atoi( argv[1]);
-   listePort[1] = atoi( argv[2]);
+    listePort[0] = atoi( argv[1]);
+    listePort[1] = atoi( argv[2]);
     
- 
     srand((unsigned) time(&t));
    
- 
     pthread_create (&threadserveur, NULL, serveur, (void *) &listePort[0]);
    
     sleep(3);
@@ -61,7 +59,7 @@ int main (int argc, char *argv[]){
     fflush(stdout);
 	for (int i = 0; i < sizeof(zmClientBrain)/sizeof(zmClientBrain[0]); i++)
 	{
-		printf("\n=============\n[ compteur ->> %d // estampille ->> %d // pid ->> %d ]\n=============",zmClientBrain[i].compteurinterne, zmClientBrain[i].estampille ,zmClientBrain[i].monpid);
+		printf("\n=============\n[ Estampille ->> %d // PID ->> %d ]\n", zmClientBrain[i].estampille ,zmClientBrain[i].monpid);
 	}
     return 0;
 }

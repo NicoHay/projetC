@@ -83,7 +83,7 @@ void*  serveur(void* arg)
 
     while( NBRE_TOURS > monIndex  )
     {
- 
+         
         int                descripteurDeSocketClient;
         struct sockaddr_in adresseDuClient;
         unsigned int       longueurDeAdresseDuClient;
@@ -91,9 +91,11 @@ void*  serveur(void* arg)
         descripteurDeSocketClient = accept (descripteurDeSocketServeur, (struct sockaddr *)&adresseDuClient, &longueurDeAdresseDuClient);
         recv (descripteurDeSocketClient, &messagefromclient, sizeof(messagefromclient), 0);
 
+        // incrementation du compteur interne en fonction du message recu par les autres process 
+        compteurInterne  = MAX(messagefromclient.estampille, compteurInterne) + 1 ;
+        
         //debug 
         printf("\n================================");
-        printf("\ncompteur du client   ---> %d", messagefromclient.compteurinterne );
         printf("\nestampile du client  ---> %d", messagefromclient.estampille );
         printf("\npid  du client       ---> %d", messagefromclient.monpid );
         printf("\n================================");
@@ -140,8 +142,7 @@ void* client(void* arg)
     }else{
 
         // Affectation des valeurs a envoyer
-        messagetoserveur.compteurinterne    = compteurInterne;
-        messagetoserveur.estampille         = 10;
+        messagetoserveur.estampille         = compteurInterne;
         messagetoserveur.monpid             = getpid();
         semaphoreZoneMemoireClient(messagetoserveur);
         send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
@@ -174,7 +175,7 @@ int randomNum()
 void messageBidon()
 {
     compteurInterne++;
-    printf("\n== *** on envoi un message bidon\n");
+    printf("\n*** on envoi un message bidon\n");
  
 }
 
@@ -242,12 +243,13 @@ void* theBrain(void* arguments)
             pthread_create (&threadclient, NULL, client, &args->port);
             messageBidon();
             pthread_join (threadclient, &retourthreadclient);
-            printf("fin du message bidon");
+            printf("*** fin du message bidon");
             break;
         case 1:
             monIndex++;
-            sleep(1);
+            pthread_create (&threadclient, NULL, client, &args->port);
             zoneCritique();
+            pthread_join (threadclient, &retourthreadclient);
             break;
         case 2: 
             monIndex++;
@@ -296,4 +298,9 @@ void   semaphoreZoneMemoireServeur(struct Messageinfos mess2)
 
 }
 
+// int incrementEstampille(struct MessageInfos message , int compteurInterne)
+// {
+
+
+// }
 
