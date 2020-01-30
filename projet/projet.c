@@ -1,3 +1,24 @@
+/*
+****************************************************************************************************
+
+            ______          _      _     _                                      _   
+            | ___ \        (_)    | |   | |                                    | |  
+            | |_/ / __ ___  _  ___| |_  | |     __ _ _ __ ___  _ __   ___  _ __| |_ 
+            |  __/ '__/ _ \| |/ _ \ __| | |    / _` | '_ ` _ \| '_ \ / _ \| '__| __|
+            | |  | | | (_) | |  __/ |_  | |___| (_| | | | | | | |_) | (_) | |  | |_ 
+            \_|  |_|  \___/| |\___|\__| \_____/\__,_|_| |_| |_| .__/ \___/|_|   \__|
+                          _/ |                                | |                   
+                          |__/                                |_|                   
+                                             
+****************************************************************************************************
+**                                       TODO LIST                                                **
+****************************************************************************************************
+*
+*   -  IMPLEMENTER LAMPORT
+*   -  INCREMENTER COMPTEUR INTERNE A RECEPTION DE MESSAGE MAX(INDEX RECU & COMPTEUR INTERNE) +1 
+* 
+**************************************************************************************************** 
+*/
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,7 +38,6 @@
 int compteurInterne = 0;
 int monIndex        = 0;
 struct Messageinfos messagefromclient;
-
 struct Messageinfos  zmClientBrain[50];
 struct Messageinfos  zmServerBrain[50];
 sem_t semaphore1;
@@ -32,9 +52,8 @@ sem_t semaphore2;
 *return         void* 
 ***************************************************************
 */
-void*  serveur(void* arg){
-
- 
+void*  serveur(void* arg)
+{
     struct sockaddr_in adresseDuServeur;
 
     adresseDuServeur.sin_family         = AF_INET;
@@ -70,8 +89,6 @@ void*  serveur(void* arg){
         unsigned int       longueurDeAdresseDuClient;
 
         descripteurDeSocketClient = accept (descripteurDeSocketServeur, (struct sockaddr *)&adresseDuClient, &longueurDeAdresseDuClient);
-
-
         recv (descripteurDeSocketClient, &messagefromclient, sizeof(messagefromclient), 0);
 
         //debug 
@@ -84,15 +101,14 @@ void*  serveur(void* arg){
         fflush(stdout);
         close (descripteurDeSocketClient);
     }
-        close (descripteurDeSocketServeur);
-        
-        // printf("***********----------fin du serveur ");
-        fflush(stdout);
-        pthread_exit( (void*) 0);
+
+    close (descripteurDeSocketServeur);
+    fflush(stdout);
+    pthread_exit( (void*) 0);
 }
 
 /*
-***************************************************************
+**************************************************************
 * thread client 
 *
 * void*         arg  numero du port a envoyer
@@ -100,8 +116,8 @@ void*  serveur(void* arg){
 *return         void* 
 ***************************************************************
 */
-void* client(void* arg){
-    
+void* client(void* arg)
+{
     struct Messageinfos messagetoserveur;
     struct sockaddr_in adr;
 
@@ -116,7 +132,6 @@ void* client(void* arg){
         pthread_exit( (void*) -1);
     }
       
-
     if (connect ( descripteurDeSocket,(struct sockaddr *) &adr, sizeof(adr)) < 0)
     {
         printf ("CLIENT ++ Problemes pour se connecter au serveur\n");
@@ -124,6 +139,7 @@ void* client(void* arg){
 
     }else{
 
+        // Affectation des valeurs a envoyer
         messagetoserveur.compteurinterne    = compteurInterne;
         messagetoserveur.estampille         = 10;
         messagetoserveur.monpid             = getpid();
@@ -131,12 +147,9 @@ void* client(void* arg){
         send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
 
         close(descripteurDeSocket);
-        printf ("\nCLIENT ++ FIN\n");
         fflush(stdout);
 
     }
-
-
     pthread_exit( (void*) 0);
 }
 /*
@@ -146,8 +159,8 @@ void* client(void* arg){
 *return         int 
 ***************************************************************
 */
-int randomNum(){
- 
+int randomNum()
+{
     return rand() % 3;
 }
 
@@ -158,8 +171,8 @@ int randomNum(){
 *return         null 
 ***************************************************************
 */
-void messageBidon(){
-
+void messageBidon()
+{
     compteurInterne++;
     printf("\n== *** on envoi un message bidon\n");
  
@@ -172,11 +185,9 @@ void messageBidon(){
 *return         null 
 ***************************************************************
 */
-void simcritique(){
-
-
+void simcritique()
+{
     printf("\n.... zone critique ...\n");
-
 
 }
 
@@ -187,7 +198,8 @@ void simcritique(){
 *return         null 
 ***************************************************************
 */
-void zoneCritique(){
+void zoneCritique()
+{
     compteurInterne++;
     simcritique();
 }
@@ -198,8 +210,8 @@ void zoneCritique(){
 *return         null 
 ***************************************************************
 */
-void actionInterne(){
-
+void actionInterne()
+{
     compteurInterne++;
     printf(" \n***  le compteur est a : %d\n", compteurInterne);
     fflush(stdout);
@@ -222,33 +234,41 @@ void* theBrain(void* arguments)
     void * retourthreadclient;
     int myaction =  args->action;
  
-
     switch (myaction)
     {
-    case 0:
-        monIndex++;
-        sleep(1);
-        pthread_create (&threadclient, NULL, client, &args->port);
-        messageBidon();
-        pthread_join (threadclient, &retourthreadclient);
-        printf("fin du message bidon");
-        break;
-    case 1:
-        monIndex++;
-        sleep(1);
-        zoneCritique();
-        break;
-    case 2: 
-        monIndex++;
-        sleep(1);
-        actionInterne();
-        break;
+        case 0:
+            monIndex++;
+            sleep(1);
+            pthread_create (&threadclient, NULL, client, &args->port);
+            messageBidon();
+            pthread_join (threadclient, &retourthreadclient);
+            printf("fin du message bidon");
+            break;
+        case 1:
+            monIndex++;
+            sleep(1);
+            zoneCritique();
+            break;
+        case 2: 
+            monIndex++;
+            sleep(1);
+            actionInterne();
+            break;
     }
 
     pthread_exit( (void*) 0);
 
 }
 
+/*
+****************************************************************
+* Semaphore  ZM client
+* 
+* @param STRUCT MessageInfos mess1
+* 
+* @return VOID
+***************************************************************
+*/
 void   semaphoreZoneMemoireClient(struct Messageinfos mess1 )
 {
     sem_init(&semaphore1, 0, 1);
@@ -258,7 +278,15 @@ void   semaphoreZoneMemoireClient(struct Messageinfos mess1 )
 
 }
 
-
+/*
+****************************************************************
+* Semaphore ZM serveur
+* 
+* @param STRUCT MessageInfos mess2
+* 
+* @return VOID
+***************************************************************
+*/
 void   semaphoreZoneMemoireServeur(struct Messageinfos mess2)
 {
     sem_init(&semaphore2, 0, 1);
@@ -269,7 +297,3 @@ void   semaphoreZoneMemoireServeur(struct Messageinfos mess2)
 }
 
 
-
-// TODO        
-
-//              IMPLEMENTER LAMPORT
