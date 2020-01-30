@@ -271,5 +271,5 @@ void   semaphoreZoneMemoireServeur(struct Messageinfos mess2)
 
 
 // TODO        
-//              POUSSER LA STRUCT DANS LE TABLEAU POUR CHECKER LAMPORT
+
 //              IMPLEMENTER LAMPORT
