@@ -45,7 +45,6 @@ int main (int argc, char *argv[]){
     for (int i = 0; i < NBRE_TOURS; i++)
     {
         action =  randomNum();
-
         args.action    = action;
         args.port      = listePort[1];
         args.nbre_tour = i;
