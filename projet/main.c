@@ -9,12 +9,16 @@
 #include <sys/un.h>
 #include <time.h> 
 
+//inclusion du fichier d'entete 
+
 #include "projet.h"
 
-/*
+/**
 ***************************************************************
-*
 * main
+*
+* @param int argc
+* @param char*[] argv
 *
 ***************************************************************
 */
@@ -40,25 +44,29 @@ int main (int argc, char *argv[]){
    
     pthread_create (&threadserveur, NULL, serveur, (void *) &listePort[0]);
    
+    printlogo();
     sleep(3);
 
     for (int i = 0; i < NBRE_TOURS; i++)
     {
-        action =  randomNum();
+        action         =  randomNum();
         args.action    = action;
         args.port      = listePort[1];
-        args.nbre_tour = i;
+   
 
         pthread_create (&threadbrain, NULL, theBrain,(void* ) &args);
         pthread_join (threadbrain, &retourbrain);
     }
+
+    fflush(stdout);
     pthread_join (threadserveur, &retourserveur);
 
-    //debug de la zone memoire
-    fflush(stdout);
+
+    //debug de la zone memoire ou historique
 	for (int i = 0; i < sizeof(zmClientBrain)/sizeof(zmClientBrain[0]); i++)
 	{
 		printf("\n=============\n[ Estampille ->> %d // PID ->> %d ]\n", zmClientBrain[i].estampille ,zmClientBrain[i].monpid);
 	}
+
     return 0;
 }

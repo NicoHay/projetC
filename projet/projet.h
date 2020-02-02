@@ -5,7 +5,7 @@
 // VARIABLES GLOBALES 
 //==============================
 
-#define NBRE_TOURS  50
+#define NBRE_TOURS  200
 #define MAX(x, y) ( ( (x) > (y) ) ? (x) : (y) )   //recupère la plus grande valeur de deux int
 
 
@@ -13,18 +13,18 @@
 extern struct Messageinfos {
     int      estampille;
     int      monpid;
+    int      action;
 }Messageinfos;  
-
-//VARIABLES
-extern struct Messageinfos  zmClientBrain[NBRE_TOURS];
-extern struct Messageinfos  zmServerBrain[NBRE_TOURS];
 
 extern struct arg_struct {
     int         action;
     int         port;
-    int         nbre_tour;
     pthread_t  thread;
 }args;
+
+//VARIABLES
+extern struct Messageinfos  zmClientBrain[NBRE_TOURS];
+extern struct Messageinfos  zmServerBrain[NBRE_TOURS];
 
 //==============================
 // PROTOTYPE DE FONCTIONS 
@@ -40,5 +40,6 @@ void    zoneCritique();
 void    actionInterne();
 void    semaphoreZoneMemoireClient(struct Messageinfos mess);
 void    semaphoreZoneCritique();
+void    printlogo();
 
 #endif

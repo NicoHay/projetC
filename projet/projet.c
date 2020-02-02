@@ -14,8 +14,7 @@
 **                                       TODO LIST                                                **
 ****************************************************************************************************
 *
-*   -  IMPLEMENTER LAMPORT
-*   -  INCREMENTER COMPTEUR INTERNE A RECEPTION DE MESSAGE MAX(INDEX RECU & COMPTEUR INTERNE) +1 
+*   -  REQUEST PLUS IMPLICITE 
 * 
 **************************************************************************************************** 
 */
@@ -43,16 +42,16 @@ struct Messageinfos  zmServerBrain[NBRE_TOURS];
 sem_t semaphore1;
 sem_t semaphore2;
 
-/*
+/**
 ***************************************************************
 * thread serveur 
 *
-* void*         arg  numero du port
-*
-*return         void* 
+* @param void*    arg  numero de port
+
+* @return         void* 
 ***************************************************************
 */
-void*  serveur(void* arg)
+void*  serveur(void* arg )
 {
     struct sockaddr_in adresseDuServeur;
 
@@ -94,20 +93,33 @@ void*  serveur(void* arg)
         // incrementation du compteur interne en fonction du message recu par les autres process 
         compteurInterne  = MAX(messagefromclient.estampille, compteurInterne) + 1 ;
 
-        if (messagefromclient.estampille < compteurInterne )
+        if ( (messagefromclient.action == 1 ) ) // si cest une demande zone critique
         {
-            printf("le process %d rentre en section ",getpid());
-           semaphoreZoneCritique();
-        }else {
-                printf("le processne rentre pas en section ");
-        }
-        
-        //debug 
-        printf("\n================================");
-        printf("\nestampile du client  ---> %d", messagefromclient.estampille );
-        printf("\npid  du client       ---> %d", messagefromclient.monpid );
-        printf("\ncompteur interne :::::::::: %d",compteurInterne);
-        printf("\n================================");
+            printf("\nle processus  %d veut rentrer en section "
+                   "\n================================ "
+                   "\navec l'estampille : %d "
+                   "\nl'action interne est a : %d" 
+                   "\n================================",messagefromclient.monpid ,messagefromclient.estampille,compteurInterne);
+
+            if ((  messagefromclient.estampille < compteurInterne ))
+            {
+                zoneCritique(); // on simule la section critique
+
+            }else {
+                printf("\nDemande refusée");
+            }
+        } 
+
+        if ( (messagefromclient.action == 0 )  )  // ceci est un message bidon 
+        {
+            messageBidon();
+            printf( "\n\nle serveur recois un message bidon suivant : "
+                    "\n================================"
+                    "\nestampile du client  ---> %d" 
+                    "\npid  du client       ---> %d"
+                    "\ncompteur interne     ---> %d"
+                    "\n================================", messagefromclient.estampille, messagefromclient.monpid, compteurInterne);
+        }      
 
         fflush(stdout);
         close (descripteurDeSocketClient);
@@ -118,22 +130,25 @@ void*  serveur(void* arg)
     pthread_exit( (void*) 0);
 }
 
-/*
-**************************************************************
+/**
+***************************************************************
 * thread client 
 *
-* void*         arg  numero du port a envoyer
+* @param void*    void*   argument 
 *
-*return         void* 
+* @return         void* 
 ***************************************************************
 */
-void* client(void* arg)
+void* client(void* argument)
 {
     struct Messageinfos messagetoserveur;
     struct sockaddr_in adr;
+     
+    struct arg_struct *args = (struct arg_struct *)argument;
+
 
     adr.sin_family          = AF_INET;
-    adr.sin_port            = htons( *(int *)arg);
+    adr.sin_port            = htons( args->port);
     adr.sin_addr.s_addr     = inet_addr("127.0.0.1");
     int descripteurDeSocket = socket (AF_INET, SOCK_STREAM, 0);
 
@@ -146,13 +161,15 @@ void* client(void* arg)
     if (connect ( descripteurDeSocket,(struct sockaddr *) &adr, sizeof(adr)) < 0)
     {
         printf ("CLIENT ++ Problemes pour se connecter au serveur\n");
-        exit( 0);
+        exit( 0); // on quitte le programme
 
     }else{
-
+           
         // Affectation des valeurs a envoyer
         messagetoserveur.estampille         = compteurInterne;
         messagetoserveur.monpid             = getpid();
+        messagetoserveur.action             = args->action;
+
         semaphoreZoneMemoireClient(messagetoserveur);
         send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
 
@@ -162,11 +179,13 @@ void* client(void* arg)
     }
     pthread_exit( (void*) 0);
 }
-/*
+
+
+/**
 ***************************************************************
 * randomNum
 *
-*return         int 
+* @return         int 
 ***************************************************************
 */
 int randomNum()
@@ -174,11 +193,11 @@ int randomNum()
     return rand() % 3;
 }
 
-/*
+/**
 ***************************************************************
 * message bidon
 *
-*return         null 
+* @return         null 
 ***************************************************************
 */
 void messageBidon()
@@ -188,54 +207,46 @@ void messageBidon()
  
 }
 
-/*
+/**
 ***************************************************************
-* SIMULATION CRITIQUE
+* ZONE CRITIQUE
 *
-*return         null 
+* @return         null 
 ***************************************************************
 */
-void simcritique()
-{
-    printf("\n.... zone critique ...\n");
-    sleep(2);
-    printf("\n.... fin zone critique ...\n");
-}
-
-/*
-***************************************************************
-* zoneCritique
-*
-*return         null 
-***************************************************************
-*/
-void zoneCritique()
+void   zoneCritique()
 {
     compteurInterne++;
-    simcritique();
+    sem_init(&semaphore2, 0, 1);
+    sem_wait(&semaphore2);  // On attend la disponibilité du sémaphore
+    printf("\n.... start critique ...\n");
+    printf("\n.... end critique ...\n");
+    sem_post(&semaphore2);  // On relache le sémaphore
+
 }
-/*
+
+
+/**
 ***************************************************************
 * actionInterne
 *
-*return         null 
+* @return         null 
 ***************************************************************
 */
 void actionInterne()
 {
     compteurInterne++;
-    printf(" \n***  le compteur est a : %d\n", compteurInterne);
+    printf(" \n***  le compteur interne augmente est passe  a : %d\n", compteurInterne);
     fflush(stdout);
 }
 
-/*
+/**
 ***************************************************************
 * thread brain 
 *
-* VOID* action  action
-* VOID* arg  action
+* @param void* ARGUMENTS
 *
-*return VOID* 
+* @return VOID* 
 ***************************************************************
 */
 void* theBrain(void* arguments)
@@ -244,21 +255,19 @@ void* theBrain(void* arguments)
     pthread_t threadclient;  
     void * retourthreadclient;
     int myaction =  args->action;
- 
+
     switch (myaction)
     {
         case 0: //message bidon
             monIndex++;
             sleep(1);
-            pthread_create (&threadclient, NULL, client, &args->port);
-            messageBidon();
+            pthread_create (&threadclient, NULL, client, args );
             pthread_join (threadclient, &retourthreadclient);
             break;
         case 1: //zone critique
             monIndex++;
             sleep(1);
-            pthread_create (&threadclient, NULL, client, &args->port);
-            // zoneCritique();
+            pthread_create (&threadclient, NULL, client, args);
             pthread_join (threadclient, &retourthreadclient);
             break;
         case 2:  //action interne
@@ -272,7 +281,7 @@ void* theBrain(void* arguments)
 
 }
 
-/*
+/**
 ****************************************************************
 * Semaphore  ZM client
 * 
@@ -289,24 +298,23 @@ void   semaphoreZoneMemoireClient(struct Messageinfos mess )
     sem_post(&semaphore1);  // On relache le sémaphore
 
 }
+/**
+ ***************************************************************
+ *  JUSTE UN PEU DE DECO
+ *  
+ * @return VOID
+ ***************************************************************
+ */
+void printlogo(){
 
-/*
-****************************************************************
-* Semaphore ZM serveur
-* 
-* @param STRUCT MessageInfos mess2
-* 
-* @return VOID
-***************************************************************
-*/
-void   semaphoreZoneCritique()
-{
-    sem_init(&semaphore2, 0, 1);
-    sem_wait(&semaphore2);  // On attend la disponibilité du sémaphore
-    compteurInterne++;
-    printf("\n.... start critique ...\n");
-
-    printf("\n.... end critique ...\n");
-    sem_post(&semaphore2);  // On relache le sémaphore
-
+    printf("\n______          _      _     _                                      _                   ");
+    printf("\n| ___ \\        (_)    | |   | |                                    | |                 ");
+    printf("\n| |_/ / __ ___  _  ___| |_  | |     __ _ _ __ ___  _ __   ___  _ __| |_                 ");
+    printf("\n|  __/ '__/ _ \\| |/ _ \\ __| | |    / _` | '_ ` _ \\| '_ \\ / _ \\| '__| __|           ");
+    printf("\n| |  | | | (_) | |  __/ |_  | |___| (_| | | | | | | |_) | (_) | |  | |_                 ");
+    printf("\n\\_|  |_|  \\___/| |\\___|\\__| \\_____/\\__,_|_| |_| |_| .__/ \\___/|_|   \\__|        ");
+    printf("\n              _/ |                                | |                                   ");
+    printf("\n              |__/                                |_|                                   ");
+    printf("\n                                                                                        ");
 }
+
