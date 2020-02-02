@@ -38,8 +38,8 @@
 int compteurInterne = 0;
 int monIndex        = 0;
 struct Messageinfos messagefromclient;
-struct Messageinfos  zmClientBrain[50];
-struct Messageinfos  zmServerBrain[50];
+struct Messageinfos  zmClientBrain[NBRE_TOURS];
+struct Messageinfos  zmServerBrain[NBRE_TOURS];
 sem_t semaphore1;
 sem_t semaphore2;
 
@@ -93,11 +93,20 @@ void*  serveur(void* arg)
 
         // incrementation du compteur interne en fonction du message recu par les autres process 
         compteurInterne  = MAX(messagefromclient.estampille, compteurInterne) + 1 ;
+
+        if (messagefromclient.estampille < compteurInterne )
+        {
+            printf("le process %d rentre en section ",getpid());
+           semaphoreZoneCritique();
+        }else {
+                printf("le processne rentre pas en section ");
+        }
         
         //debug 
         printf("\n================================");
         printf("\nestampile du client  ---> %d", messagefromclient.estampille );
         printf("\npid  du client       ---> %d", messagefromclient.monpid );
+        printf("\ncompteur interne :::::::::: %d",compteurInterne);
         printf("\n================================");
 
         fflush(stdout);
@@ -189,7 +198,8 @@ void messageBidon()
 void simcritique()
 {
     printf("\n.... zone critique ...\n");
-
+    sleep(2);
+    printf("\n.... fin zone critique ...\n");
 }
 
 /*
@@ -237,21 +247,21 @@ void* theBrain(void* arguments)
  
     switch (myaction)
     {
-        case 0:
+        case 0: //message bidon
             monIndex++;
             sleep(1);
             pthread_create (&threadclient, NULL, client, &args->port);
             messageBidon();
             pthread_join (threadclient, &retourthreadclient);
-            printf("*** fin du message bidon");
             break;
-        case 1:
+        case 1: //zone critique
             monIndex++;
+            sleep(1);
             pthread_create (&threadclient, NULL, client, &args->port);
-            zoneCritique();
+            // zoneCritique();
             pthread_join (threadclient, &retourthreadclient);
             break;
-        case 2: 
+        case 2:  //action interne
             monIndex++;
             sleep(1);
             actionInterne();
@@ -266,16 +276,16 @@ void* theBrain(void* arguments)
 ****************************************************************
 * Semaphore  ZM client
 * 
-* @param STRUCT MessageInfos mess1
+* @param STRUCT MessageInfos mess
 * 
 * @return VOID
 ***************************************************************
 */
-void   semaphoreZoneMemoireClient(struct Messageinfos mess1 )
+void   semaphoreZoneMemoireClient(struct Messageinfos mess )
 {
     sem_init(&semaphore1, 0, 1);
     sem_wait(&semaphore1);  // On attend la disponibilité du sémaphore
-    zmClientBrain[monIndex] = mess1;
+    zmClientBrain[monIndex] = mess;
     sem_post(&semaphore1);  // On relache le sémaphore
 
 }
@@ -289,18 +299,14 @@ void   semaphoreZoneMemoireClient(struct Messageinfos mess1 )
 * @return VOID
 ***************************************************************
 */
-void   semaphoreZoneMemoireServeur(struct Messageinfos mess2)
+void   semaphoreZoneCritique()
 {
     sem_init(&semaphore2, 0, 1);
     sem_wait(&semaphore2);  // On attend la disponibilité du sémaphore
-    zmServerBrain[monIndex] = mess2;
+    compteurInterne++;
+    printf("\n.... start critique ...\n");
+
+    printf("\n.... end critique ...\n");
     sem_post(&semaphore2);  // On relache le sémaphore
 
 }
-
-// int incrementEstampille(struct MessageInfos message , int compteurInterne)
-// {
-
-
-// }
-
