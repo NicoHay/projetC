@@ -5,7 +5,7 @@
 // VARIABLES GLOBALES 
 //==============================
 
-#define NBRE_TOURS  200
+#define NBRE_TOURS  100     //nombre de tours à effectuer
 #define MAX(x, y) ( ( (x) > (y) ) ? (x) : (y) )   //recupère la plus grande valeur de deux int
 
 

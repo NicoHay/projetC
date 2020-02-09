@@ -10,8 +10,8 @@
 #include <time.h> 
 
 //inclusion du fichier d'entete 
-
 #include "projet.h"
+
 
 /**
 ***************************************************************
@@ -19,7 +19,8 @@
 *
 * @param int argc
 * @param char*[] argv
-*
+* 
+* @return int 
 ***************************************************************
 */
 int main (int argc, char *argv[]){
@@ -45,7 +46,7 @@ int main (int argc, char *argv[]){
     pthread_create (&threadserveur, NULL, serveur, (void *) &listePort[0]);
    
     printlogo();
-    sleep(3);
+    sleep(5);
 
     for (int i = 0; i < NBRE_TOURS; i++)
     {

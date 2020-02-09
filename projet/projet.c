@@ -15,6 +15,7 @@
 ****************************************************************************************************
 *
 *   -  REQUEST PLUS IMPLICITE 
+*   -  AJOUT D'UN TROISIEME PROCESS 
 * 
 **************************************************************************************************** 
 */
@@ -59,7 +60,6 @@ void*  serveur(void* arg )
     adresseDuServeur.sin_port           = htons( *(int*)arg);
     adresseDuServeur.sin_addr.s_addr    = inet_addr("127.0.0.1");
     int descripteurDeSocketServeur      = socket (PF_INET, SOCK_STREAM, 0);
-
 
 
     if (descripteurDeSocketServeur < 0)
@@ -112,7 +112,6 @@ void*  serveur(void* arg )
 
         if ( (messagefromclient.action == 0 )  )  // ceci est un message bidon 
         {
-            messageBidon();
             printf( "\n\nle serveur recois un message bidon suivant : "
                     "\n================================"
                     "\nestampile du client  ---> %d" 
@@ -131,12 +130,12 @@ void*  serveur(void* arg )
 }
 
 /**
-***************************************************************
+**************************************************************
 * thread client 
 *
-* @param void*    void*   argument 
+* @param     void*      arg  numero du port a envoyer
 *
-* @return         void* 
+* @return    void* 
 ***************************************************************
 */
 void* client(void* argument)
@@ -170,8 +169,9 @@ void* client(void* argument)
         messagetoserveur.monpid             = getpid();
         messagetoserveur.action             = args->action;
 
-        semaphoreZoneMemoireClient(messagetoserveur);
         send(descripteurDeSocket, &messagetoserveur, sizeof(messagetoserveur), 0);
+        
+        semaphoreZoneMemoireClient(messagetoserveur);
 
         close(descripteurDeSocket);
         fflush(stdout);
@@ -180,12 +180,11 @@ void* client(void* argument)
     pthread_exit( (void*) 0);
 }
 
-
 /**
 ***************************************************************
-* randomNum
+* randomNum     Genere un nombre aléatoire
 *
-* @return         int 
+*@return         int 
 ***************************************************************
 */
 int randomNum()
@@ -197,14 +196,13 @@ int randomNum()
 ***************************************************************
 * message bidon
 *
-* @return         null 
+*@return         null 
 ***************************************************************
 */
 void messageBidon()
 {
-    compteurInterne++;
     printf("\n*** on envoi un message bidon\n");
- 
+    compteurInterne++;
 }
 
 /**
@@ -216,15 +214,13 @@ void messageBidon()
 */
 void   zoneCritique()
 {
-    compteurInterne++;
     sem_init(&semaphore2, 0, 1);
     sem_wait(&semaphore2);  // On attend la disponibilité du sémaphore
+    compteurInterne++;
     printf("\n.... start critique ...\n");
     printf("\n.... end critique ...\n");
     sem_post(&semaphore2);  // On relache le sémaphore
-
 }
-
 
 /**
 ***************************************************************
@@ -262,6 +258,7 @@ void* theBrain(void* arguments)
             monIndex++;
             sleep(1);
             pthread_create (&threadclient, NULL, client, args );
+            messageBidon();
             pthread_join (threadclient, &retourthreadclient);
             break;
         case 1: //zone critique
@@ -283,7 +280,8 @@ void* theBrain(void* arguments)
 
 /**
 ****************************************************************
-* Semaphore  ZM client
+* Semaphore  Zone Memoire client 
+*            Enregistrement des evenements
 * 
 * @param STRUCT MessageInfos mess
 * 
@@ -298,12 +296,11 @@ void   semaphoreZoneMemoireClient(struct Messageinfos mess )
     sem_post(&semaphore1);  // On relache le sémaphore
 
 }
+
 /**
- ***************************************************************
  *  JUSTE UN PEU DE DECO
  *  
  * @return VOID
- ***************************************************************
  */
 void printlogo(){
 
