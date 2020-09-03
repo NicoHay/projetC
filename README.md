@@ -1,4 +1,5 @@
-# projetC
+# projet en C
 
 
-Un projet distribué en C pour le CNAM 2019
+Un projet distribué en C pour le CNAM 2020
+Implementation de l'horloge de Lamport en C.
